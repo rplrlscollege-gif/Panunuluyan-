@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panunuluyan Attendance & Fund Manager</title>
+<style>
+:root{--navy:#17365d;--blue:#245b86;--bg:#f4f7fb;--line:#dbe3ec;--muted:#64748b;--teal:#0f766e;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#172033;font:15px system-ui,Segoe UI,Arial,sans-serif}
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:white;padding:22px max(18px,calc((100% - 1160px)/2));display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(22px,3vw,30px)}header p{margin:6px 0 0;color:#e2eaf4}
+.session-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.role-badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.04em}
+main{max-width:1160px;margin:22px auto;padding:0 15px 45px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+button,.tab{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;background:#e2eaf4;color:var(--navy)}
+button:hover,.tab:hover{filter:brightness(.97)}nav .active,.primary{background:var(--navy);color:white}.teal{background:var(--teal);color:white}.danger{background:var(--red);color:white}.ghost-light{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.panel{display:none;background:white;border:1px solid var(--line);border-radius:13px;padding:18px;margin-bottom:15px}.panel.active{display:block}
+h2{margin:0 0 14px;color:var(--navy);font-size:20px}h3{color:var(--navy);font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;color:#34445b}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;background:white}
+input.caps-only{text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.field{margin-bottom:11px}.hint,.muted{color:var(--muted);font-size:13px}
+.notice{padding:12px 14px;background:#eff6ff;color:#1e40af;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+.warn{padding:12px 14px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;margin:10px 0;font-size:13px;line-height:1.5}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:15px}
+.card{background:white;border:1px solid var(--line);border-radius:10px;padding:13px}.k{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase}.v{font-size:22px;font-weight:800;color:var(--navy);margin-top:4px;overflow-wrap:anywhere}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:9px;margin-top:12px}
+table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+th{background:#edf3f9;color:var(--navy);position:sticky;top:0}
+.hidden{display:none!important}a{color:#1d4ed8;font-weight:600}.alertrow{padding:9px 0;border-bottom:1px solid #bfdbfe}
+.statement-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}.statement-item{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:11px}.statement-item strong{display:block;color:var(--navy);font-size:18px;margin-top:4px}.small{font-size:12px;color:var(--muted)}.pill{display:inline-block;border-radius:20px;padding:3px 8px;background:#e8eef6;color:#334155;font-size:11px;font-weight:700}
+.auth-box{max-width:560px;margin:24px auto;background:white;border:1px solid var(--line);border-radius:14px;padding:22px}
+.role-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.role-switch button.active{background:var(--navy);color:white}
+@media(max-width:600px){nav button{flex:1 1 40%}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Panunuluyan Attendance & Fund Manager</h1>
+    <p>Participant IDs · Choir Rehearsals · Actual Presentation · Fund Allocation · Individual Shares · Payout Tracking</p>
+  </div>
+  <div class="session-bar" id="sessionBar">
+    <span class="role-badge" id="sessionBadge">SIGNED OUT</span>
+    <button class="ghost-light hidden" id="signOutBtn" type="button">Sign Out</button>
+  </div>
+</header>
+
+<main>
+  <!-- SIGN IN GATE -->
+  <section id="authGate" class="auth-box">
+    <h2>Sign In</h2>
+    <p class="hint">Sign in using <strong>ALL CAPITAL LETTERS</strong>. Participants can view their own attendance and fund share in read-only mode, and cannot edit or add participants.</p>
+
+    <div class="role-switch">
+      <button type="button" id="modeParticipant" class="active">Participant Sign In</button>
+      <button type="button" id="modeAdmin">Admin Sign In</button>
+    </div>
+
+    <div id="participantAuthForm">
+      <div class="field">
+        <label for="loginParticipantKey">Participant ID or Full Name (ALL CAPITAL LETTERS)</label>
+        <input id="loginParticipantKey" class="caps-only" placeholder="E.G. PNU-0001 OR JUAN DELA CRUZ" autocomplete="off">
+      </div>
+      <div class="notice">
+        Enter your assigned ID (such as <strong>PNU-0001</strong>) or your full registered name in <strong>ALL CAPITAL LETTERS</strong>. Read-only access only.
+      </div>
+      <button class="primary" id="participantLoginBtn" type="button">Sign In as Participant</button>
+    </div>
+
+    <div id="adminAuthForm" class="hidden">
+      <div class="field">
+        <label for="loginAdminCode">Admin Passcode (ALL CAPITAL LETTERS)</label>
+        <input id="loginAdminCode" type="password" class="caps-only" placeholder="ENTER ADMIN CODE IN ALL CAPS">
+      </div>
+      <div class="notice">
+        Default Admin Passcode is <strong>ADMIN</strong> (in ALL CAPITAL LETTERS). You can customize <code>ADMIN_PASSCODE</code> inside the script before publishing.
+      </div>
+      <button class="primary" id="adminLoginBtn" type="button">Sign In as Admin</button>
+    </div>
+
+    <div id="authError" class="warn hidden"></div>
+  </section>
+
+  <!-- MAIN APPLICATION -->
+  <div id="appShell" class="hidden">
+    <nav id="mainNav">
+      <button class="active" data-tab="home" data-role="all">Main Page</button>
+      <button data-tab="people" data-role="admin">Participants / IDs</button>
+      <button data-tab="entry" data-role="admin">Attendance Entry</button>
+      <button data-tab="summary" data-role="admin">Fund Summary</button>
+      <button data-tab="statement" data-role="all">My / Participant Statement</button>
+      <button data-tab="backup" data-role="admin">Backup</button>
+    </nav>
+
+    <section id="home" class="panel active">
+      <h2 id="homeTitle">Main Page</h2>
+      <div id="participantBanner" class="notice hidden">
+        <strong>Participant Read-Only Mode:</strong> You are signed in as a participant. You can monitor your attendance and fund allocation, but you cannot edit or add participants or modify records.
+      </div>
+      <div class="cards">
+        <div class="card"><div class="k">Participants</div><div class="v" id="nPeople">0</div></div>
+        <div class="card"><div class="k">Total Collection</div><div class="v" id="nCollection">₱0.00</div></div>
+        <div class="card"><div class="k">Choir Rehearsals</div><div class="v" id="nPractice">0</div></div>
+        <div class="card"><div class="k">Presentation Days</div><div class="v" id="nPresentation">0</div></div>
+      </div>
+
+      <div id="adminQuickEntry">
+        <h2>Quick Attendance Entry</h2>
+        <div class="grid">
+          <div class="field"><label for="quickType">Attendance type</label><select id="quickType"><option value="practice">Choir Rehearsal</option><option value="presentation">Actual Presentation</option></select></div>
+          <div class="field"><label for="quickDate">Date</label><input id="quickDate" type="date"></div>
+          <div class="field" id="quickCollectionBox"><label for="quickCollection">Collection for this presentation day (₱)</label><input id="quickCollection" type="number" min="0" step=".01" value="0"></div>
+        </div>
+        <button class="primary" id="goEntry">Open Attendance Entry</button>
+      </div>
+
+      <div id="participantQuickSummary" class="hidden">
+        <h2>My Attendance & Fund Snapshot</h2>
+        <div id="mySnapshot" class="notice">Loading your personal summary...</div>
+        <button class="primary" id="goMyStatement" type="button">View Full Statement & Print/PDF</button>
+      </div>
+
+      <h2 style="margin-top:22px">Recent Records</h2><div id="recent" class="muted">No records yet.</div>
+    </section>
+
+    <section id="people" class="panel" data-admin-only="true">
+      <h2>Participant Masterlist & ID Generator</h2>
+      <div class="notice">Each participant receives a unique ID (PNU-0001, PNU-0002, etc.). Save an email address to enable the Prepare Email link when someone reaches 3 absences.</div>
+      <div class="grid">
+        <div class="field"><label for="personName">Full name</label><input id="personName" placeholder="Participant full name"></div>
+        <div class="field"><label for="ministry">Ministry</label><select id="ministry"><option value="SACRISTAN">Sacristan</option><option value="CHOIR">Choir</option></select></div>
+        <div class="field"><label for="personEmail">Email address (optional)</label><input id="personEmail" type="email" placeholder="name@example.com"></div>
+      </div>
+      <button class="primary" id="addPerson">Generate ID & Add Participant</button>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Ministry</th><th>Email</th><th>Action</th></tr></thead><tbody id="peopleRows"></tbody></table></div>
+    </section>
+
+    <section id="entry" class="panel" data-admin-only="true">
+      <h2>Attendance Entry</h2>
+      <div class="grid">
+        <div class="field"><label for="entryType">Type</label><select id="entryType"><option value="practice">Choir Rehearsal</option><option value="presentation">Actual Presentation</option></select></div>
+        <div class="field"><label for="entryDate">Date</label><input id="entryDate" type="date"></div>
+        <div class="field" id="entryCollectionBox"><label for="entryCollection">Total collection for this presentation day (₱)</label><input id="entryCollection" type="number" min="0" step=".01" value="0"></div>
+      </div>
+      <div class="notice">Load the participants, mark each person PRESENT, ABSENT, or EXCUSED, then save. For the 20% rehearsal pool, each session has an equal portion, shared only by participants marked PRESENT. ABSENT and EXCUSED participants receive no share for that session. Only saved attendance records are counted for the 3-absence alert.</div>
+      <div class="actions"><button class="teal" id="loadList">Load Participants</button><button class="primary" id="saveAttendance">Save Attendance</button></div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Ministry</th><th>Attendance Status</th></tr></thead><tbody id="attendanceRows"><tr><td colspan="4">Choose a date and load participants. Add each rehearsal date you actually hold.</td></tr></tbody></table></div>
+    </section>
+
+    <section id="summary" class="panel" data-admin-only="true">
+      <h2>Fund Summary & Settings</h2>
+      <div class="notice"><strong>Every Actual Presentation Day = 100% of that day's collection:</strong><br>
+      • <strong>50% Performance Attendance:</strong> that day's 50% is divided equally ONLY among participants marked PRESENT on that date.<br>
+      • <strong>15% Choir Fund:</strong> that day's 15% is deducted from the collection and reserved for the Choir Fund; it is NOT added to any participant's personal share.<br>
+      • <strong>15% Sacristan Fund:</strong> that day's 15% is deducted from the collection and reserved for the Sacristan Fund; it is NOT added to any participant's personal share.<br>
+      • <strong>20% Rehearsal Share:</strong> that day's 20% is added to the accumulated Rehearsal Fund. The accumulated pool is divided across the number of rehearsals you set; each rehearsal's portion is shared equally ONLY among those marked PRESENT at that rehearsal. Absences mean no share for that session.<br><br>
+      <strong>Each day's four portions add up to exactly 100%.</strong> Daily presentation portions are calculated independently; the 20% rehearsal portions accumulate across performance days. The 30% ministry funds are set aside and are NOT part of the individual payout. The reconciliation counts them as reserved funds, not participant shares.</div>
+      <div class="grid">
+        <div class="field"><label for="practiceDays">Number of Choir Rehearsals (set your actual total)</label><input id="practiceDays" type="number" min="1" step="1" value="6"></div>
+        <div class="field"><label for="presentationDays">Expected presentation days (reference only)</label><input id="presentationDays" type="number" min="1" step="1" value="9"></div>
+      </div>
+      <button class="primary" id="recalc">Save Settings & Recalculate</button>
+      <div class="cards" style="margin-top:14px">
+        <div class="card"><div class="k">Total Collection</div><div class="v" id="totalCollection">₱0.00</div></div>
+        <div class="card"><div class="k">20% Choir Rehearsal Pool</div><div class="v" id="participationPool">₱0.00</div></div>
+        <div class="card"><div class="k">Reference: 20% Pool ÷ Registered Participants</div><div class="v" id="sharePerHead">₱0.00</div></div>
+        <div class="card"><div class="k">15% Sacristan Fund (Withheld)</div><div class="v" id="sacPool">₱0.00</div></div>
+        <div class="card"><div class="k">15% Choir Fund (Withheld)</div><div class="v" id="choirPool">₱0.00</div></div>
+        <div class="card"><div class="k">Total Distributed</div><div class="v" id="totalDistributed">₱0.00</div></div>
+        <div class="card"><div class="k">Unallocated Balance</div><div class="v" id="unallocated">₱0.00</div></div>
+      </div>
+      <div class="notice" id="reconciliation">Allocation reconciliation will appear here.</div>
+      <h3 style="margin-top:20px">Actual Presentation — Daily 100% Breakdown</h3>
+      <p class="hint">Each presentation date is calculated separately. The day's 50% is shared only by that day's PRESENT participants; the 15% + 15% ministry portions are added to their respective ministry pools; 20% is added to the rehearsal pool.</p>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Collection (100%)</th><th>50% Present Attendees</th><th>15% Choir Fund</th><th>15% Sacristan Fund</th><th>20% Rehearsal Pool</th><th>Daily Total</th></tr></thead><tbody id="dailyBreakdownRows"></tbody></table></div>
+      <h3 style="margin-top:20px">Choir Rehearsal — Session Breakdown</h3>
+      <p class="hint">The accumulated 20% rehearsal pool is divided by your configured number of rehearsals. Each recorded rehearsal's portion is divided equally among those PRESENT.</p>
+      <div class="table-wrap"><table><thead><tr><th>Rehearsal Date</th><th>Session Allocation</th><th>Present Participants</th><th>Share Per Present Participant</th><th>Unallocated</th></tr></thead><tbody id="rehearsalBreakdownRows"></tbody></table></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Participant</th><th>Ministry</th><th>Rehearsals Present</th><th>Presentation Days Present</th><th>Total Absences</th><th>Rehearsal Share Earned (20%)</th><th>Daily Presentation Share Earned (50%)</th><th>Personal Share Due (50% + earned 20%)</th></tr></thead>
+        <tbody id="fundRows"></tbody></table></div>
+      <h2 style="margin-top:22px">Absence Alerts — 3 or More</h2>
+      <div id="absenceAlerts" class="notice">No participants have reached 3 absences.</div>
+      <p class="hint">Only saved attendance records are counted. Unrecorded future days are not treated as absences. The 30% ministry funds are withheld separately and are not included in any participant's personal share.</p>
+    </section>
+
+    <section id="statement" class="panel">
+      <h2 id="statementTitle">Individual Participant Statement</h2>
+      <p class="hint" id="statementHint">Choose a participant to view their attendance, fund allocation, deductions, amount received, and remaining balance. You can print or save this statement as PDF.</p>
+      <div class="grid" id="statementControls">
+        <div class="field" id="statementPersonField"><label for="statementPerson">Participant</label><select id="statementPerson"><option value="">Select participant</option></select></div>
+        <div class="field" id="statementReceivedField"><label for="statementReceived">Amount already received (₱)</label><input id="statementReceived" type="number" min="0" step="0.01" value="0"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="saveReceived" data-admin-only="true">Save Amount Received</button>
+        <button class="teal" id="printStatement">Print / Save as PDF</button>
+      </div>
+      <div id="statementContent" class="notice">Select a participant to generate their individual statement.</div>
+    </section>
+
+    <section id="backup" class="panel" data-admin-only="true">
+      <h2>Backup & Data</h2>
+      <div class="notice">Your information is saved locally in this browser on this device. Export backups regularly. Prepare Email opens a draft in your email app; it does not send automatically.</div>
+      <div class="actions">
+        <button class="primary" id="exportBackup">Download JSON Backup</button>
+        <label class="tab" for="importBackup">Import JSON Backup</label><input id="importBackup" class="hidden" type="file" accept=".json,application/json">
+        <button class="danger" id="clearAll">Clear All Data</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+'use strict';
+const KEY='panunuluyan_fund_manager_option_a_v1';
+const SESSION_KEY='panunuluyan_session_v1';
+const ADMIN_PASSCODE='ADMIN'; // Must be ALL CAPITAL LETTERS
+const $=id=>document.getElementById(id);
+const cash=n=>'₱'+(Number(n)||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>{const d=new Date();const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)};
+const fresh=()=>({people:[],records:[],payments:{},settings:{practiceDays:6,presentationDays:9}});
+
+let db;
+try{db={...fresh(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(e){db=fresh()}
+db.people=Array.isArray(db.people)?db.people:[];
+db.records=Array.isArray(db.records)?db.records:[];
+db.settings={...fresh().settings,...(db.settings||{})};
+db.payments=db.payments&&typeof db.payments==='object'?db.payments:{};
+
+let session=null;
+try{session=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null')}catch(e){session=null}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){alert('Could not save to browser storage. Please export a backup and check available browser storage.');return false}}
+function saveSession(){try{if(session)sessionStorage.setItem(SESSION_KEY,JSON.stringify(session));else sessionStorage.removeItem(SESSION_KEY)}catch(e){}}
+
+const isAdmin=()=>session?.role==='admin';
+const isParticipant=()=>session?.role==='participant';
+
+function showAuthError(msg){
+  const el=$('authError');
+  el.textContent=msg;
+  el.classList.remove('hidden');
+}
+function clearAuthError(){$('authError').classList.add('hidden');}
+
+// Enforce ALL CAPITAL LETTERS on login inputs
+['loginParticipantKey','loginAdminCode'].forEach(id=>{
+  const el=$(id);
+  el.addEventListener('input',()=>{
+    const pos=el.selectionStart;
+    el.value=el.value.toUpperCase();
+    if(typeof pos==='number')el.setSelectionRange(pos,pos);
+  });
+});
+
+$('modeParticipant').addEventListener('click',()=>{
+  $('modeParticipant').classList.add('active');
+  $('modeAdmin').classList.remove('active');
+  $('participantAuthForm').classList.remove('hidden');
+  $('adminAuthForm').classList.add('hidden');
+  clearAuthError();
+});
+$('modeAdmin').addEventListener('click',()=>{
+  $('modeAdmin').classList.add('active');
+  $('modeParticipant').classList.remove('active');
+  $('adminAuthForm').classList.remove('hidden');
+  $('participantAuthForm').classList.add('hidden');
+  clearAuthError();
+});
+
+$('adminLoginBtn').addEventListener('click',()=>{
+  clearAuthError();
+  const raw=$('loginAdminCode').value;
+  if(!raw.trim())return showAuthError('Please enter the Admin Passcode in ALL CAPITAL LETTERS.');
+  if(raw!==raw.toUpperCase())return showAuthError('Please use ALL CAPITAL LETTERS only.');
+  if(raw.trim()!==ADMIN_PASSCODE.toUpperCase())return showAuthError('Invalid Admin Passcode.');
+  session={role:'admin'};
+  saveSession();
+  $('loginAdminCode').value='';
+  applySessionUI();
+});
+
+$('participantLoginBtn').addEventListener('click',()=>{
+  clearAuthError();
+  const raw=$('loginParticipantKey').value;
+  if(!raw.trim())return showAuthError('Please enter your Participant ID or Full Name in ALL CAPITAL LETTERS.');
+  if(raw!==raw.toUpperCase())return showAuthError('Sign in must use ALL CAPITAL LETTERS.');
+  const key=raw.trim();
+  const match=db.people.find(p=>p.id.toUpperCase()===key || p.name.trim().toUpperCase()===key);
+  if(!match){
+    return showAuthError('No matching participant found in ALL CAPITAL LETTERS. Check your ID (e.g. PNU-0001) or registered full name with the Admin.');
+  }
+  session={role:'participant',personId:match.id};
+  saveSession();
+  $('loginParticipantKey').value='';
+  applySessionUI();
+});
+
+$('signOutBtn').addEventListener('click',()=>{
+  session=null;
+  saveSession();
+  applySessionUI();
+});
+
+function applySessionUI(){
+  const loggedIn=Boolean(session && (isAdmin() || (isParticipant() && db.people.some(p=>p.id===session.personId))));
+  if(!loggedIn && session){session=null;saveSession();}
+
+  $('authGate').classList.toggle('hidden',loggedIn);
+  $('appShell').classList.toggle('hidden',!loggedIn);
+  $('signOutBtn').classList.toggle('hidden',!loggedIn);
+
+  if(!loggedIn){
+    $('sessionBadge').textContent='SIGNED OUT';
+    return;
+  }
+
+  if(isAdmin()){
+    $('sessionBadge').textContent='ADMIN · ALL CAPS';
+    $('participantBanner').classList.add('hidden');
+    $('adminQuickEntry').classList.remove('hidden');
+    $('participantQuickSummary').classList.add('hidden');
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el=>el.classList.remove('hidden'));
+    document.querySelectorAll('#mainNav button[data-role="admin"]').forEach(b=>b.classList.remove('hidden'));
+    $('statementPersonField').classList.remove('hidden');
+    $('statementReceivedField').classList.remove('hidden');
+    $('statementTitle').textContent='Individual Participant Statement';
+    $('statementHint').textContent='Choose a participant to view their attendance, fund allocation, deductions, amount received, and remaining balance. You can print or save this statement as PDF.';
+    switchTab('home');
+  }else{
+    const me=db.people.find(p=>p.id===session.personId);
+    $('sessionBadge').textContent=`PARTICIPANT: ${me.name.toUpperCase()} (${me.id})`;
+    $('participantBanner').classList.remove('hidden');
+    $('adminQuickEntry').classList.add('hidden');
+    $('participantQuickSummary').classList.remove('hidden');
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el=>el.classList.add('hidden'));
+    document.querySelectorAll('#mainNav button[data-role="admin"]').forEach(b=>b.classList.add('hidden'));
+    $('statementPersonField').classList.add('hidden');
+    $('statementReceivedField').classList.add('hidden');
+    $('statementTitle').textContent='My Attendance & Fund Statement';
+    $('statementHint').textContent='Read-only view of your attendance, earned shares, payment status, and printable/PDF statement. Editing or adding participants is restricted to Admin.';
+    $('statementPerson').value=me.id;
+    switchTab('home');
+  }
+  render();
+}
+
+function switchTab(id){
+  if(isParticipant() && ['people','entry','summary','backup'].includes(id))id='home';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+  document.querySelectorAll('main>.panel').forEach(p=>p.classList.toggle('active',p.id===id));
+  if(id==='statement' && isParticipant()){
+    $('statementPerson').value=session.personId;
+    showStatement();
+  }
+}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+$('goMyStatement').addEventListener('click',()=>{
+  if(isParticipant())$('statementPerson').value=session.personId;
+  switchTab('statement');
+  showStatement();
+});
+
+function nextId(){let i=1,used=new Set(db.people.map(p=>p.id));while(used.has('PNU-'+String(i).padStart(4,'0')))i++;return 'PNU-'+String(i).padStart(4,'0')}
+function getRecord(type,date){return db.records.find(r=>r.type===type&&r.date===date)}
+function removePerson(id){
+  if(!isAdmin())return alert('Only Admin can remove participants.');
+  if(!confirm('Remove this participant from the masterlist? Their old attendance entries will remain in saved records.'))return;
+  db.people=db.people.filter(p=>p.id!==id);saveAndRender();
+}
+$('addPerson').addEventListener('click',()=>{
+  if(!isAdmin())return alert('Only Admin can add participants.');
+  const name=$('personName').value.trim(),email=$('personEmail').value.trim();
+  if(!name)return alert('Please enter the participant name.');
+  if(db.people.some(p=>p.name.toLowerCase()===name.toLowerCase()))return alert('This participant is already on the list.');
+  db.people.push({id:nextId(),name,ministry:$('ministry').value,email});
+  $('personName').value='';$('personEmail').value='';saveAndRender();
+});
+function showCollectionField(){$('entryCollectionBox').classList.toggle('hidden',$('entryType').value!=='presentation')}
+$('entryType').addEventListener('change',showCollectionField);
+$('quickType').addEventListener('change',()=>$('quickCollectionBox').classList.toggle('hidden',$('quickType').value!=='presentation'));
+$('goEntry').addEventListener('click',()=>{
+  if(!isAdmin())return alert('Only Admin can enter attendance.');
+  $('entryType').value=$('quickType').value;$('entryDate').value=$('quickDate').value||today();$('entryCollection').value=$('quickCollection').value||0;
+  showCollectionField();switchTab('entry');loadAttendance();
+});
+function loadAttendance(){
+  if(!isAdmin())return;
+  const type=$('entryType').value,date=$('entryDate').value;
+  if(!date)return alert('Please choose a date.');
+  if(!db.people.length){$('attendanceRows').innerHTML='<tr><td colspan="4">Add participants first in Participants / IDs.</td></tr>';return alert('Add participants first.');}
+  const old=getRecord(type,date);
+  $('entryCollection').value=old?.collection??0;
+  $('attendanceRows').innerHTML=db.people.map(p=>{
+    const status=old?.attendance?.[p.id]||'ABSENT';
+    return `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.ministry)}</td><td><select data-person-id="${esc(p.id)}"><option value="PRESENT" ${status==='PRESENT'?'selected':''}>PRESENT</option><option value="ABSENT" ${status==='ABSENT'?'selected':''}>ABSENT</option><option value="EXCUSED" ${status==='EXCUSED'?'selected':''}>EXCUSED</option></select></td></tr>`;
+  }).join('');
+}
+$('loadList').addEventListener('click',loadAttendance);
+$('saveAttendance').addEventListener('click',()=>{
+  if(!isAdmin())return alert('Only Admin can save attendance.');
+  const type=$('entryType').value,date=$('entryDate').value;
+  if(!date)return alert('Please choose a date.');
+  if(!db.people.length)return alert('Add participants first.');
+  const selectors=[...document.querySelectorAll('#attendanceRows select[data-person-id]')];
+  if(selectors.length!==db.people.length){return alert('Please click “Load Participants” first, then mark attendance before saving.');}
+  const attendance={};
+  selectors.forEach(sel=>attendance[sel.dataset.personId]=sel.value);
+  let r=getRecord(type,date);
+  if(!r){r={type,date,collection:0,attendance:{}};db.records.push(r)}
+  r.collection=type==='presentation'?Math.max(0,Number($('entryCollection').value)||0):0;
+  r.attendance=attendance;
+  if(!persist())return;
+  render();
+  alert('Attendance saved successfully. The Main Page, Fund Summary, and Participant Statements have been updated.');
+});
+function readSettings(){
+  db.settings={
+    practiceDays:Math.max(1,Math.floor(Number($('practiceDays').value)||1)),
+    presentationDays:Math.max(1,Math.floor(Number($('presentationDays').value)||1))
+  };
+}
+let latestRows=[];
+function calculate(){
+  const {practiceDays}=db.settings;
+  const cents=n=>Math.round((Number(n)||0)*100);
+  const money=c=>c/100;
+  const collectionCents=db.records.filter(r=>r.type==='presentation').reduce((sum,r)=>sum+cents(r.collection),0);
+  const collection=money(collectionCents);
+  const rehearsalPoolC=cents(money(collectionCents)*.20);
+  const practices=db.records.filter(r=>r.type==='practice').sort((a,b)=>a.date.localeCompare(b.date));
+  const presentations=db.records.filter(r=>r.type==='presentation').sort((a,b)=>a.date.localeCompare(b.date));
+  const rows=db.people.map(p=>({p,pPresent:0,aPresent:0,pAbsent:0,aAbsent:0,abs:0,rehearsalEarnedC:0,presentationEarnedC:0,ministryC:0,totalC:0}));
+  const byId=new Map(rows.map(x=>[x.p.id,x]));
+  const splitCents=(poolC,people)=>{
+    if(!people.length)return {shares:[],unallocated:poolC};
+    const base=Math.floor(poolC/people.length),remainder=poolC-base*people.length;
+    return {shares:people.map((p,i)=>base+(i<remainder?1:0)),unallocated:0};
+  };
+  let rehearsalUnallocatedC=0,presentationUnallocatedC=0;
+  const sessionBaseC=practiceDays?Math.floor(rehearsalPoolC/practiceDays):0;
+  const sessionRemainderC=practiceDays?rehearsalPoolC-sessionBaseC*practiceDays:0;
+  const includedPractices=practices.slice(0,practiceDays);
+  const rehearsalRows=[];
+  includedPractices.forEach((r,index)=>{
+    const sessionPoolC=sessionBaseC+(index<sessionRemainderC?1:0);
+    const present=db.people.filter(p=>r.attendance?.[p.id]==='PRESENT');
+    const split=splitCents(sessionPoolC,present);
+    present.forEach((p,i)=>{const x=byId.get(p.id);if(x){x.rehearsalEarnedC+=split.shares[i];x.pPresent++;}});
+    rehearsalUnallocatedC+=split.unallocated;
+    db.people.forEach(p=>{const x=byId.get(p.id);if(x && r.attendance?.[p.id]==='ABSENT')x.pAbsent++;});
+    rehearsalRows.push({date:r.date,poolC:sessionPoolC,present:present.length,perC:present.length?Math.floor(sessionPoolC/present.length):0,unallocatedC:split.unallocated});
+  });
+  if(practices.length<practiceDays){
+    for(let i=practices.length;i<practiceDays;i++) rehearsalUnallocatedC+=sessionBaseC+(i<sessionRemainderC?1:0);
+  }
+  const dailyRows=[];
+  presentations.forEach(r=>{
+    const dayC=cents(r.collection),present=db.people.filter(p=>r.attendance?.[p.id]==='PRESENT');
+    const p50=Math.round(dayC*.50),choir15=Math.round(dayC*.15),sac15=Math.round(dayC*.15),rehearsal20=dayC-p50-choir15-sac15;
+    const split=splitCents(p50,present);
+    present.forEach((p,i)=>{const x=byId.get(p.id);if(x){x.presentationEarnedC+=split.shares[i];x.aPresent++;}});
+    presentationUnallocatedC+=split.unallocated;
+    db.people.forEach(p=>{const x=byId.get(p.id);if(x && r.attendance?.[p.id]==='ABSENT')x.aAbsent++;});
+    dailyRows.push({date:r.date,dayC,p50,choir15,sac15,rehearsal20,present:present.length,unallocatedC:split.unallocated});
+  });
+  rows.forEach(x=>{x.abs=x.pAbsent+x.aAbsent;x.rehearsalEarned=money(x.rehearsalEarnedC);x.presentationEarned=money(x.presentationEarnedC);x.ministry=0;x.totalC=x.rehearsalEarnedC+x.presentationEarnedC;x.total=money(x.totalC);});
+  const personalSharesC=rows.reduce((n,x)=>n+x.totalC,0);
+  const choirReservedC=dailyRows.reduce((n,d)=>n+d.choir15,0);
+  const sacReservedC=dailyRows.reduce((n,d)=>n+d.sac15,0);
+  const reservedMinistryC=choirReservedC+sacReservedC;
+  const distributedC=personalSharesC+reservedMinistryC;
+  const unallocatedC=Math.max(0,collectionCents-distributedC);
+  latestRows=rows;
+  const rehearsalPool=money(rehearsalPoolC),sacPool=money(dailyRows.reduce((n,d)=>n+d.sac15,0)),choirPool=money(dailyRows.reduce((n,d)=>n+d.choir15,0));
+  $('totalCollection').textContent=cash(collection);$('participationPool').textContent=cash(rehearsalPool);
+  $('sharePerHead').textContent=cash(db.people.length?rehearsalPool/db.people.length:0);
+  $('sacPool').textContent=cash(sacPool);$('choirPool').textContent=cash(choirPool);
+  $('totalDistributed').textContent=cash(money(distributedC));$('unallocated').textContent=cash(money(unallocatedC));
+  $('fundRows').innerHTML=rows.map(x=>`<tr><td>${esc(x.p.id)}</td><td>${esc(x.p.name)}</td><td>${esc(x.p.ministry)}</td><td>${x.pPresent}</td><td>${x.aPresent}</td><td>${x.abs}</td><td><strong>${cash(x.rehearsalEarned)}</strong></td><td><strong>${cash(x.presentationEarned)}</strong></td><td><strong>${cash(x.total)}</strong></td></tr>`).join('')||'<tr><td colspan="9">No participants registered.</td></tr>';
+  $('dailyBreakdownRows').innerHTML=dailyRows.map(d=>`<tr><td>${esc(d.date)}</td><td>${cash(money(d.dayC))}</td><td>${cash(money(d.p50))}<div class="small">${d.present} present · ${d.present?cash(money(Math.floor(d.p50/d.present))):'₱0.00'} base share</div></td><td>${cash(money(d.choir15))}</td><td>${cash(money(d.sac15))}</td><td>${cash(money(d.rehearsal20))}</td><td><strong>${cash(money(d.p50+d.choir15+d.sac15+d.rehearsal20))}</strong></td></tr>`).join('')||'<tr><td colspan="7">No presentation days recorded.</td></tr>';
+  $('rehearsalBreakdownRows').innerHTML=rehearsalRows.map(d=>`<tr><td>${esc(d.date)}</td><td>${cash(money(d.poolC))}</td><td>${d.present}</td><td>${d.present?cash(money(d.perC)):'₱0.00'}</td><td>${cash(money(d.unallocatedC))}</td></tr>`).join('')||'<tr><td colspan="5">No rehearsal attendance records within the configured session count.</td></tr>';
+  const flagged=rows.filter(x=>x.abs>=3);
+  $('absenceAlerts').innerHTML=flagged.length?flagged.map(x=>{const subject=encodeURIComponent('Panunuluyan attendance reminder');const body=encodeURIComponent(`Hello ${x.p.name},\n\nOur attendance record shows ${x.abs} absences across Panunuluyan rehearsals and actual presentations. This is a friendly reminder to coordinate with the organizers if you have any concerns.\n\nThank you.`);const link=x.p.email?`<a href="mailto:${encodeURIComponent(x.p.email)}?subject=${subject}&body=${body}">Prepare Email</a>`:'<span class="small">No email address saved — add one in Participants / IDs.</span>';return `<div class="alertrow"><strong>${esc(x.p.name)}</strong> (${esc(x.p.id)}) — ${x.abs} absences · ${link}</div>`;}).join(''):'No participants have reached 3 absences.';
+  const notes=[];
+  if(practices.length<practiceDays)notes.push(`${practiceDays-practices.length} rehearsal(s) not yet recorded`);
+  if(practices.length>practiceDays)notes.push(`${practices.length-practiceDays} extra rehearsal record(s) beyond configured count are excluded`);
+  if(rehearsalUnallocatedC>0)notes.push(`rehearsal allocation not yet distributed: ${cash(money(rehearsalUnallocatedC))}`);
+  if(presentationUnallocatedC>0)notes.push(`daily 50% performance shares not distributed (no PRESENT participants): ${cash(money(presentationUnallocatedC))}`);
+  $('reconciliation').innerHTML=`<strong>Reconciliation:</strong> Total collection ${cash(collection)} = personal participant shares ${cash(money(personalSharesC))} + reserved ministry funds ${cash(money(reservedMinistryC))} + unallocated ${cash(money(unallocatedC))}. ${Math.abs(collectionCents-distributedC-unallocatedC)<1?'The amounts reconcile to the cent.':'Please review the records.'}${notes.length?'<br><br><strong>Items to complete:</strong> '+notes.map(esc).join('; '):''}`;
+
+  if(isParticipant()){
+    const me=latestRows.find(r=>r.p.id===session.personId);
+    if(me){
+      const received=Math.max(0,Number(db.payments[me.p.id]||0));
+      const balance=Math.max(0,me.total-received);
+      $('mySnapshot').innerHTML=`<strong>${esc(me.p.name.toUpperCase())}</strong> (${esc(me.p.id)} · ${esc(me.p.ministry)})<br>
+      Rehearsals Present: <strong>${me.pPresent}</strong> · Presentation Days Present: <strong>${me.aPresent}</strong> · Absences: <strong>${me.abs}</strong><br>
+      Personal Share Due: <strong>${cash(me.total)}</strong> · Received: <strong>${cash(received)}</strong> · Remaining Balance: <strong>${cash(balance)}</strong>`;
+    }
+  }
+}
+
+function refreshStatementOptions(){
+  const sel=$('statementPerson');
+  const current=sel.value;
+  sel.innerHTML='<option value="">Select participant</option>'+db.people.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${esc(p.id)})</option>`).join('');
+  if(isParticipant()) sel.value=session.personId;
+  else if(db.people.some(p=>p.id===current)) sel.value=current;
+}
+
+function showStatement(){
+  const id=isParticipant()?session.personId:$('statementPerson').value;
+  const x=latestRows.find(row=>row.p.id===id);
+  if(!x){$('statementContent').innerHTML='Select a participant to generate their individual statement.';$('statementReceived').value=0;return;}
+  const received=Math.max(0,Number(db.payments[id]||0)), balance=Math.max(0,x.total-received);
+  const ministryReserved = db.records.filter(r=>r.type==='presentation').reduce((sum,r)=>sum+Math.round((Number(r.collection)||0)*100*.15)*2,0)/100;
+  const presentations=db.records.filter(r=>r.type==='presentation');
+  const practiceDays=Number(db.settings.practiceDays)||0, presentationDays=presentations.length;
+  const pct=(n,d)=>d?Math.min(100,n/d*100):0;
+  $('statementReceived').value=received.toFixed(2);
+  $('statementContent').innerHTML=`<div id="printableStatement"><h3>Panunuluyan Individual Fund Statement</h3>
+  <p><strong>${esc(x.p.name)}</strong> · ${esc(x.p.id)} · ${esc(x.p.ministry)}</p>
+  <div class="statement-grid">
+  <div class="statement-item">Choir rehearsals attended<strong>${x.pPresent} / ${practiceDays} (${pct(x.pPresent,practiceDays).toFixed(1)}%)</strong></div>
+  <div class="statement-item">Presentation days attended<strong>${x.aPresent} / ${presentationDays} (${pct(x.aPresent,presentationDays).toFixed(1)}%)</strong></div>
+  <div class="statement-item">Total absences<strong>${x.abs}</strong></div></div>
+  <div class="table-wrap"><table style="min-width:0"><tbody>
+  <tr><td>Earned rehearsal allocation (20% pool, present sessions only)</td><td style="text-align:right">${cash(x.rehearsalEarned)}</td></tr>
+  <tr><td>Earned actual presentation allocation (50% of each day, present days only)</td><td style="text-align:right">${cash(x.presentationEarned)}</td></tr>
+  <tr><td>Choir and Sacristan funds (30% withheld; not part of personal share)</td><td style="text-align:right">${cash(ministryReserved)} reserved</td></tr>
+  <tr><td><strong>Total amount due</strong></td><td style="text-align:right"><strong>${cash(x.total)}</strong></td></tr>
+  <tr><td>Amount already received</td><td style="text-align:right">${cash(received)}</td></tr>
+  <tr><td><strong>Remaining balance</strong></td><td style="text-align:right"><strong>${cash(balance)}</strong></td></tr>
+  </tbody></table></div>
+  <p><strong>Payment status:</strong> ${balance<=0?'FULLY RECEIVED':received>0?'PARTIALLY RECEIVED':'NOT YET RECEIVED'}</p>
+  <p class="small">Each presentation date is split independently: 50% to that day's attendees, 15% withheld for the Choir Fund, 15% withheld for the Sacristan Fund, and 20% accumulated for rehearsals. The withheld 30% is never added to personal payout.</p></div>`;
+}
+$('statementPerson').addEventListener('change',showStatement);
+$('saveReceived').addEventListener('click',()=>{
+  if(!isAdmin())return alert('Only Admin can update amounts received.');
+  const id=$('statementPerson').value;
+  if(!id)return alert('Please select a participant first.');
+  const amount=Number($('statementReceived').value);
+  if(!Number.isFinite(amount)||amount<0)return alert('Enter a valid non-negative amount.');
+  db.payments[id]=amount;persist();showStatement();alert('Amount received saved.');
+});
+$('printStatement').addEventListener('click',()=>{
+  const id=isParticipant()?session.personId:$('statementPerson').value;
+  if(!id)return alert('Please select a participant first.');
+  showStatement();
+  const content=$('statementContent').innerHTML;
+  const win=window.open('','_blank');
+  if(!win)return alert('Please allow pop-ups to print the statement.');
+  win.document.write(`<!doctype html><html><head><title>Panunuluyan Individual Statement</title><style>body{font:14px Arial,sans-serif;padding:24px;color:#172033}h3{color:#17365d}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:9px;border-bottom:1px solid #ddd}.statement-grid{display:flex;gap:10px;flex-wrap:wrap}.statement-item{border:1px solid #ddd;padding:10px;flex:1}.statement-item strong{display:block;margin-top:5px}@media print{button{display:none}}</style></head><body>${content}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  win.document.close();
+});
+
+function render(){
+  $('peopleRows').innerHTML=db.people.map(p=>`<tr><td><strong>${esc(p.id)}</strong></td><td>${esc(p.name)}</td><td>${esc(p.ministry)}</td><td>${esc(p.email)}</td><td><button class="danger" onclick="removePerson('${esc(p.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No participants yet.</td></tr>';
+  const collection=db.records.filter(r=>r.type==='presentation').reduce((sum,r)=>sum+(Number(r.collection)||0),0);
+  $('nPeople').textContent=db.people.length;$('nCollection').textContent=cash(collection);
+  $('nPractice').textContent=db.records.filter(r=>r.type==='practice').length;
+  $('nPresentation').textContent=db.records.filter(r=>r.type==='presentation').length;
+  $('recent').innerHTML=[...db.records].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7).map(r=>{
+    const present=Object.values(r.attendance||{}).filter(v=>v==='PRESENT').length;
+    const myStatus=isParticipant()?` · Your status: <strong>${esc(r.attendance?.[session.personId]||'UNRECORDED')}</strong>`:'';
+    return `<div style="padding:7px 0;border-bottom:1px solid #e2e8f0"><strong>${esc(r.date)}</strong> · ${r.type==='practice'?'Choir Rehearsal':'Actual Presentation'} · ${present} present${r.type==='presentation'?' · '+cash(r.collection):''}${myStatus}</div>`;
+  }).join('')||'No records yet.';
+  calculate();
+  refreshStatementOptions();
+  showStatement();
+}
+function saveAndRender(){persist();render()}
+$('recalc').addEventListener('click',()=>{if(!isAdmin())return;readSettings();if(!persist())return;render();alert('Settings saved and fund summary recalculated.')});
+$('exportBackup').addEventListener('click',()=>{
+  if(!isAdmin())return;
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='panunuluyan-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+$('importBackup').addEventListener('change',async e=>{
+  if(!isAdmin())return;
+  try{const file=e.target.files[0];if(!file)return;const obj=JSON.parse(await file.text());if(!Array.isArray(obj.people)||!Array.isArray(obj.records))throw new Error('Invalid format');db={...fresh(),...obj};db.settings={...fresh().settings,...(obj.settings||{})};db.payments=obj.payments&&typeof obj.payments==='object'?obj.payments:{};saveAndRender();$('practiceDays').value=db.settings.practiceDays;$('presentationDays').value=db.settings.presentationDays;alert('Backup imported successfully.')}
+  catch(err){alert('Could not import this backup. Please select a valid Panunuluyan JSON backup.')}
+  e.target.value='';
+});
+$('clearAll').addEventListener('click',()=>{
+  if(!isAdmin())return;
+  if(confirm('Permanently clear all participants, attendance records, and settings from this browser? Export a backup first if needed.')){db=fresh();saveAndRender();$('practiceDays').value=db.settings.practiceDays;$('presentationDays').value=db.settings.presentationDays}
+});
+$('quickDate').value=today();$('entryDate').value=today();
+$('practiceDays').value=db.settings.practiceDays;$('presentationDays').value=db.settings.presentationDays;
+$('quickCollectionBox').classList.add('hidden');showCollectionField();
+applySessionUI();
+</script>
+</body>
+</html>
